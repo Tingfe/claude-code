@@ -15,19 +15,32 @@ export interface InputBackend {
   key(key: string, action: 'press' | 'release'): Promise<void>
   keys(parts: string[]): Promise<void>
   mouseLocation(): Promise<{ x: number; y: number }>
-  mouseButton(button: 'left' | 'right' | 'middle', action: 'click' | 'press' | 'release', count?: number): Promise<void>
-  mouseScroll(amount: number, direction: 'vertical' | 'horizontal'): Promise<void>
+  mouseButton(
+    button: 'left' | 'right' | 'middle',
+    action: 'click' | 'press' | 'release',
+    count?: number,
+  ): Promise<void>
+  mouseScroll(
+    amount: number,
+    direction: 'vertical' | 'horizontal',
+  ): Promise<void>
   typeText(text: string): Promise<void>
   getFrontmostAppInfo(): FrontmostAppInfo | null
 }
 
 function loadBackend(): InputBackend | null {
-  if (process.platform !== 'darwin') return null
   try {
-    return require('./backends/darwin.js') as InputBackend
+    if (process.platform === 'darwin') {
+      return require('./backends/darwin.js') as InputBackend
+    } else if (process.platform === 'win32') {
+      return require('./backends/win32.js') as InputBackend
+    } else if (process.platform === 'linux') {
+      return require('./backends/linux.js') as InputBackend
+    }
   } catch {
     return null
   }
+  return null
 }
 
 const backend = loadBackend()
@@ -54,5 +67,7 @@ export class ComputerUseInputAPI {
   declare isSupported: true
 }
 
-interface ComputerUseInputUnsupported { isSupported: false }
+interface ComputerUseInputUnsupported {
+  isSupported: false
+}
 export type ComputerUseInput = ComputerUseInputAPI | ComputerUseInputUnsupported

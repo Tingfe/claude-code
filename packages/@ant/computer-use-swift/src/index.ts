@@ -18,38 +18,71 @@ export type {
 
 import type { ResolvePrepareCaptureResult } from './backends/darwin.js'
 
-function loadDarwin() {
-  if (process.platform !== 'darwin') return null
+function loadBackend() {
   try {
-    return require('./backends/darwin.js')
+    if (process.platform === 'darwin') {
+      return require('./backends/darwin.js')
+    } else if (process.platform === 'win32') {
+      return require('./backends/win32.js')
+    } else if (process.platform === 'linux') {
+      return require('./backends/linux.js')
+    }
   } catch {
     return null
   }
+  return null
 }
 
-const darwin = loadDarwin()
+const backend = loadBackend()
 
 export class ComputerUseAPI {
-  apps = darwin?.apps ?? {
-    async prepareDisplay() { return { activated: '', hidden: [] } },
-    async previewHideSet() { return [] },
-    async findWindowDisplays(ids: string[]) { return ids.map((b: string) => ({ bundleId: b, displayIds: [] as number[] })) },
-    async appUnderPoint() { return null },
-    async listInstalled() { return [] },
-    iconDataUrl() { return null },
-    listRunning() { return [] },
-    async open() { throw new Error('@ant/computer-use-swift: macOS only') },
+  apps = backend?.apps ?? {
+    async prepareDisplay() {
+      return { activated: '', hidden: [] }
+    },
+    async previewHideSet() {
+      return []
+    },
+    async findWindowDisplays(ids: string[]) {
+      return ids.map((b: string) => ({
+        bundleId: b,
+        displayIds: [] as number[],
+      }))
+    },
+    async appUnderPoint() {
+      return null
+    },
+    async listInstalled() {
+      return []
+    },
+    iconDataUrl() {
+      return null
+    },
+    listRunning() {
+      return []
+    },
+    async open() {
+      throw new Error('@ant/computer-use-swift: macOS only')
+    },
     async unhide() {},
   }
 
-  display = darwin?.display ?? {
-    getSize() { throw new Error('@ant/computer-use-swift: macOS only') },
-    listAll() { throw new Error('@ant/computer-use-swift: macOS only') },
+  display = backend?.display ?? {
+    getSize() {
+      throw new Error('@ant/computer-use-swift: macOS only')
+    },
+    listAll() {
+      throw new Error('@ant/computer-use-swift: macOS only')
+    },
   }
 
-  screenshot = darwin?.screenshot ?? {
-    async captureExcluding() { throw new Error('@ant/computer-use-swift: macOS only') },
-    async captureRegion() { throw new Error('@ant/computer-use-swift: macOS only') },
+  screenshot = backend?.screenshot ?? {
+    async captureExcluding() {
+      throw new Error('@ant/computer-use-swift: macOS only')
+    },
+    async captureRegion() {
+      throw new Error('@ant/computer-use-swift: macOS only')
+    },
   }
 
   async resolvePrepareCapture(
@@ -60,6 +93,12 @@ export class ComputerUseAPI {
     targetH: number,
     displayId?: number,
   ): Promise<ResolvePrepareCaptureResult> {
-    return this.screenshot.captureExcluding(allowedBundleIds, quality, targetW, targetH, displayId)
+    return this.screenshot.captureExcluding(
+      allowedBundleIds,
+      quality,
+      targetW,
+      targetH,
+      displayId,
+    )
   }
 }
